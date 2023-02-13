@@ -1,0 +1,84 @@
+version: '3'
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cassandra-cluster
+      - CASSANDRA_SEEDS=cassandra
+    ports:
+      - 9042:9042
+  elasticsearch:
+    image: elasticsearch:latest
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - 6379:6379
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5432:5432
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+  zookeeper:
+    image: zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+  hadoop-master:
+    image: sequenceiq/hadoop-docker:2.7.1
+    container_name: hadoop-master
+    ports:
+      - 50070:50070
+      - 8088:8088
+  spark-worker:
+    image: spark:latest
+    container_name: spark-worker
+    command: start-worker.sh spark://spark-master:7077
+    environment:
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 2g
+    networks:
+      - spark-network
+  web:
+    build: .
+    ports:
+      - 5000:5000
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: development
+    depends_on:
+      - postgres
+  logstash:
+    image: logstash:latest
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - 5044:5044
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - 3000:3000
+  jenkins:
+    image: jenkins/jenkins:latest
+    container_name: jenkins
+    ports:
+      - 8080:8080
+      - 50000:50000
+networks:
+  spark-network:
+    driver: bridge
